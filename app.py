@@ -6,7 +6,12 @@ import altair as alt
 from PIL import Image
 from pathlib import Path
 import torch
-from torchvision.models import mobilenet_v3_large, resnet18
+from torchvision.models import (
+    convnext_tiny,
+    efficientnet_b3,
+    mobilenet_v3_large,
+    resnet18,
+)
 from torchvision import transforms
 
 # 앱 파일과 같은 폴더에 있는 엑셀 파일을 사용합니다.
@@ -243,6 +248,25 @@ MODEL_FILES = sorted(
     key=lambda p: (p.name != "YOLO.pt", p.name.lower()),
 )
 
+# ImageFolder가 학습 노트북에서 만든 알파벳 순 클래스 순서와 동일합니다.
+SKIN_DISEASE_CLASSES = [
+    "Actinic_Keratosis",
+    "Basal_Cell_Carcinoma",
+    "Bowen_disease",
+    "Dermatofibroma",
+    "Lentigo",
+    "Malignant_melanoma",
+    "Melanocytic_nevus",
+    "Milium",
+    "Pyogenic_granuloma",
+    "Sebaceous_hyperplasia",
+    "Seborrheic_keratosis",
+    "Squamous_Cell_Carcinoma",
+    "epidermal_cyst",
+    "hemangioma",
+    "verruca",
+]
+
 if not MODEL_FILES:
     st.error("CNN_models 폴더에 .pt 또는 .pth 모델 파일이 없습니다.")
     st.stop()
@@ -262,34 +286,72 @@ selected_model = st.sidebar.selectbox(
 def load_model(model_path):
     model_path = Path(model_path)
 
-    if model_path.suffix.lower() == ".pt":
-        return {"kind": "yolo", "model": YOLO(str(model_path))}
-
+    # Ultralytics 체크포인트는 EMA/model 객체를 포함합니다. 일반 PyTorch
+    # 분류 체크포인트는 state_dict이므로 확장자가 아니라 내용을 확인합니다.
     checkpoint = torch.load(
         model_path,
         map_location="cpu",
         weights_only=False,
     )
-    state = checkpoint.get("model_state_dict", checkpoint)
-    class_names = checkpoint.get("class_names") or checkpoint.get("classes")
+    if isinstance(checkpoint, dict) and (
+        checkpoint.get("ema") is not None or checkpoint.get("model") is not None
+    ):
+        return {"kind": "yolo", "model": YOLO(str(model_path))}
+
+    state = checkpoint.get(
+        "model_state_dict",
+        checkpoint.get("state_dict", checkpoint),
+    )
+    class_names = (
+        checkpoint.get("class_names") or checkpoint.get("classes")
+        if isinstance(checkpoint, dict)
+        else None
+    )
+
+    if not isinstance(state, dict):
+        raise ValueError("지원하지 않는 PyTorch 체크포인트 구조입니다.")
+
+    # ConvNeXt/EfficientNet 체크포인트는 순수 state_dict로 저장되어 클래스
+    # 메타데이터가 없으므로 학습 노트북의 ImageFolder 순서를 사용합니다.
+    if not class_names and model_path.name in {
+        "ConvNeXt-Tiny.pth",
+        "EfficientNet-B3.pth",
+    }:
+        class_names = SKIN_DISEASE_CLASSES
 
     if not class_names:
         raise ValueError(
-            "ResNet18 체크포인트에 class_names 정보가 없습니다. "
-            "학습 노트북에서 모델을 다시 저장하세요."
+            "분류 체크포인트에 class_names 또는 classes 정보가 없습니다. "
+            "클래스 이름이 포함된 체크포인트가 필요합니다."
         )
 
-    if any(key.startswith("classifier.") for key in state):
+    if "features.1.0.layer_scale" in state:
+        model = convnext_tiny(weights=None)
+        model.classifier[2] = torch.nn.Linear(
+            model.classifier[2].in_features,
+            len(class_names),
+        )
+    elif any(".block.1.fc1.weight" in key for key in state):
+        model = efficientnet_b3(weights=None)
+        model.classifier[1] = torch.nn.Linear(
+            model.classifier[1].in_features,
+            len(class_names),
+        )
+    elif any(key.startswith("classifier.3.") for key in state):
         model = mobilenet_v3_large(weights=None)
         model.classifier[3] = torch.nn.Linear(
             model.classifier[3].in_features,
             len(class_names),
         )
-    else:
+    elif any(key.startswith("fc.") for key in state):
         model = resnet18(weights=None)
         model.fc = torch.nn.Linear(
             model.fc.in_features,
             len(class_names),
+        )
+    else:
+        raise ValueError(
+            f"지원하지 않는 분류 모델 구조입니다: {model_path.name}"
         )
 
     model.load_state_dict(state)
@@ -309,8 +371,8 @@ except Exception as e:
     st.stop()
 
 
-# ResNet18 학습 시 사용한 입력 전처리
-resnet_transform = transforms.Compose([
+# 분류 모델 학습에 사용한 입력 전처리
+classifier_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(
@@ -323,7 +385,7 @@ resnet_transform = transforms.Compose([
 # 두 모델 모두 같은 {name, confidence} 형식의 Top-5 결과 반환
 def predict_image(image_rgb):
     if model_bundle["kind"] == "classifier":
-        image_tensor = resnet_transform(
+        image_tensor = classifier_transform(
             Image.fromarray(image_rgb)
         ).unsqueeze(0)
 
