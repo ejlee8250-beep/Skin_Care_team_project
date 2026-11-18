@@ -4,11 +4,6 @@ data/
 *.tar
 *.part0
 
-# Model weights
-*.pth
-
-*.ckpt
-
 # Python
 __pycache__/
 *.pyc
