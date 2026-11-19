@@ -26,7 +26,7 @@ SkinCare AI는 Streamlit으로 만든 피부 이미지 분석 애플리케이션
 
 ### 모델 및 질환 안내 데이터
 
-- `CNN_models/`에는 앱에서 사용할 `.pt` 또는 `.pth` 가중치 파일을 둡니다. 현재 프로젝트에는 `YOLO.pt`, `resnet18.pth`, `SkinCare_MobileNetV3_Improved_Model.pth`, `ConvNeXt-Tiny.pth`, `EfficientNet-B3.pth`가 포함되어 있습니다.
+- `CNN_models/`에는 앱에서 사용할 `.pt` 또는 `.pth` 가중치 파일을 둡니다. 현재 프로젝트에는 `YOLO.pt`, `resnet18.pth`, `SkinCare_MobileNetV3_Improved_Model.pth`, `EfficientNet-B3.pth`가 포함되어 있습니다.
 - YOLO 모델 클래스명 또는 분류 체크포인트의 클래스명이 엑셀의 `영어병명` 값과 일치해야 치료 안내를 찾을 수 있습니다. 비교할 때 대소문자와 공백은 정규화됩니다.
 - `Skin_Tumor_Disease_Guide.xlsx`의 `질환 정보` 시트에서 5행을 열 제목으로 읽으며 `영어병명`, `한국병명`, `피부과치료추천`, `추천화장품` 열을 사용합니다.
 - `CNN_models_code/`에는 YOLO, ResNet18, MobileNetV3, EfficientNet-B3, ConvNeXt-Tiny 학습 및 실험 노트북이 있습니다. 현재 앱은 위 네 가지 PyTorch 분류 구조와 Ultralytics YOLO 체크포인트를 지원합니다. ConvNeXt와 EfficientNet 체크포인트는 학습 때 사용한 알파벳 순 15개 클래스 이름을 앱에서 연결합니다.
@@ -43,8 +43,7 @@ SkinCare AI는 Streamlit으로 만든 피부 이미지 분석 애플리케이션
 │   ├── SkinCare_YOLO_Model.ipynb
 │   ├── SkinCare_ResNet18_Model.ipynb
 │   ├── SkinCare_MobileNetV3_Model.ipynb
-│   ├── SkinCare_EfficientNet-B3.ipynb
-│   └── SkinCare_ConvNeXt-Tiny.ipynb
+│   └── SkinCare_EfficientNet-B3.ipynb
 └── sc_page.ipynb                           # 프로젝트 분석/실험 노트북
 ```
 
