@@ -238,7 +238,9 @@ MODEL_DIR.mkdir(exist_ok=True)
 MODEL_FILES = sorted(
     [
         p for p in MODEL_DIR.iterdir()
-        if p.is_file() and p.suffix.lower() in {".pt", ".pth"}
+        if p.is_file()
+        and p.suffix.lower() in {".pt", ".pth"}
+        and "convnext" not in p.stem.lower()
     ],
     key=lambda p: (p.name != "YOLO.pt", p.name.lower()),
 )
