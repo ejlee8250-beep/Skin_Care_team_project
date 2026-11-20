@@ -39,7 +39,7 @@ nest-asyncio2==1.7.4
 networkx==3.7
 numpy==2.5.5
 nvidia-ml-py==13.615.71
-opencv-python==5.0.0.93
+opencv-python-headless==4.11.0.86
 openpyxl==3.1.5
 packaging==26.3
 pandas==3.1.1
