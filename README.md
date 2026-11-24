@@ -4,6 +4,9 @@ SkinCare AI는 Streamlit으로 만든 피부 이미지 분석 애플리케이션
 
 > 이 앱의 결과는 참고용이며 의료진의 진단을 대체하지 않습니다. 실제 진단과 치료 방법은 피부과 전문의와 상담해야 합니다.
 
+## 배포된 웹 앱 바로가기
+- https://skincareteamproject-egdzk3dyvrdaorw8trg8xb.streamlit.app
+
 ## 주요 기능
 
 - **이미지 분석**: JPG, JPEG, PNG 이미지를 업로드해 피부 질환을 분석합니다.
